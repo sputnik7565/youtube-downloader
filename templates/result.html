@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>다운로드 선택</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; max-width: 800px; margin: auto; padding: 20px; background-color: #f4f4f9; color: #333; }
+        h1, h2 { color: #007aff; }
+        img { max-width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #eef; }
+        a { text-decoration: none; color: #007aff; font-weight: bold; }
+        a:hover { text-decoration: underline; }
+        .back-link { display: inline-block; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>{{ video.title }}</h1>
+    <img src="{{ video.thumbnail_url }}" alt="Thumbnail">
+
+    <h2>🎥 비디오 다운로드 (영상+음성)</h2>
+    <table>
+        <tr><th>화질</th><th>파일 형식</th><th>다운로드</th></tr>
+        {% for stream in video_streams %}
+        <tr>
+            <td>{{ stream.resolution }}</td>
+            <td>{{ stream.mime_type.split('/')[1] }}</td>
+            <td><a href="/download?url={{ original_url }}&itag={{ stream.itag }}" target="_blank">다운로드</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>🎵 오디오만 다운로드</h2>
+    <p>주의: MP3가 아닌 원본 오디오(m4a/webm) 파일입니다.</p>
+    <table>
+        <tr><th>음질</th><th>파일 형식</th><th>다운로드</th></tr>
+        {% for stream in audio_streams %}
+        <tr>
+            <td>{{ stream.abr }}</td>
+            <td>{{ stream.mime_type.split('/')[1] }}</td>
+            <td><a href="/download?url={{ original_url }}&itag={{ stream.itag }}" target="_blank" download="{{ video.title }}.{{ stream.mime_type.split('/')[1] }}">다운로드</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="/" class="back-link">← 처음으로 돌아가기</a>
+</body>
+</html>

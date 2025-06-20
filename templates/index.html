@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Downloader</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #f4f4f9; color: #333; }
+        h1 { color: #007aff; }
+        form { display: flex; gap: 10px; margin-top: 20px; }
+        input[type="text"] { flex-grow: 1; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+        input[type="submit"] { padding: 10px 15px; border-radius: 8px; border: none; background-color: #007aff; color: white; font-size: 16px; cursor: pointer; }
+        input[type="submit"]:hover { background-color: #005bb5; }
+    </style>
+</head>
+<body>
+    <h1>온라인 비디오 다운로더</h1>
+    <p>다운로드할 동영상 URL을 입력하고 버튼을 누르세요.</p>
+    <form action="/get_streams" method="post">
+        <input type="text" name="url" placeholder="예: https://www.youtube.com/watch?v=..." required>
+        <input type="submit" value="정보 가져오기">
+    </form>
+</body>
+</html>
