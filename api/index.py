@@ -3,8 +3,11 @@ from flask import Flask, render_template, request, redirect
 from pytubefix import YouTube
 import urllib.parse
 
+
 # Flask 앱 생성. 템플릿 폴더 경로를 상대 경로로 정확히 지정합니다.
 app = Flask(__name__, template_folder='../templates')
+
+
 
 
 @app.route('/')
@@ -15,6 +18,7 @@ def home():
 def get_streams():
     url = request.form['url']
     try:
+
         yt = YouTube(url, client='WEB')
         
         # 비디오 스트림 (음성 포함, mp4)
