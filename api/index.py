@@ -2,9 +2,19 @@
 from flask import Flask, render_template, request, redirect
 from pytubefix import YouTube
 import urllib.parse
+import random  # 랜덤 선택을 위해 추가
 
 # Flask 앱 생성. 템플릿 폴더 경로를 상대 경로로 정확히 지정합니다.
 app = Flask(__name__, template_folder='../templates')
+
+
+# 실제로는 더 많고 다양한 프록시를 사용하는 것이 좋습니다.
+PROXY_LIST = [
+    'http://123.45.67.89:8080',
+    'http://98.76.54.32:3128',
+    # ... 여기에 여러 프록시 주소를 추가 ...
+]
+
 
 @app.route('/')
 def home():
@@ -14,7 +24,14 @@ def home():
 def get_streams():
     url = request.form['url']
     try:
-        yt = YouTube(url, client='WEB')
+        # 프록시 목록에서 무작위로 하나를 선택
+        proxy_url = random.choice(PROXY_LIST)
+        # pytubefix에 프록시 설정 전달
+        yt = YouTube(
+            url,
+            client='WEB',
+            proxies={'http': proxy_url, 'https': proxy_url}
+        )
         
         # 비디오 스트림 (음성 포함, mp4)
         video_streams = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc()
@@ -41,7 +58,14 @@ def download():
     itag = request.args.get('itag')
     
     try:
-        yt = YouTube(url, client='WEB')
+        # 프록시 목록에서 무작위로 하나를 선택
+        proxy_url = random.choice(PROXY_LIST) 
+        # pytubefix에 프록시 설정 전달
+        yt = YouTube(
+            url,
+            client='WEB',
+            proxies={'http': proxy_url, 'https': proxy_url}
+        )
         stream = yt.streams.get_by_itag(itag)
         
         # 실제 다운로드 URL로 사용자를 리디렉션
