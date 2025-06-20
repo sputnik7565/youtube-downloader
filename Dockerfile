@@ -18,6 +18,7 @@ WORKDIR /app
 # 4. 의존성 파일 복사 및 설치
 # 먼저 requirements.txt만 복사하여 설치합니다.
 # 이렇게 하면 나중에 코드만 변경되었을 때 이 단계의 캐시를 재사용하여 빌드 속도가 빨라집니다.
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
