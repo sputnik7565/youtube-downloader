@@ -14,7 +14,7 @@ def home():
 def get_streams():
     url = request.form['url']
     try:
-        yt = YouTube(url, use_po_token=True)
+        yt = YouTube(url, client='WEB')
         
         # 비디오 스트림 (음성 포함, mp4)
         video_streams = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc()
@@ -41,7 +41,7 @@ def download():
     itag = request.args.get('itag')
     
     try:
-        yt = YouTube(url, use_po_token=True)
+        yt = YouTube(url, client='WEB')
         stream = yt.streams.get_by_itag(itag)
         
         # 실제 다운로드 URL로 사용자를 리디렉션
