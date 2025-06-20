@@ -1,7 +1,6 @@
 # api/index.py
 from flask import Flask, render_template, request, redirect
 from pytubefix import YouTube
-from pytubefix.cli import on_progress
 import urllib.parse
 
 # Flask 앱 생성. 템플릿 폴더 경로를 상대 경로로 정확히 지정합니다.
@@ -15,7 +14,7 @@ def home():
 def get_streams():
     url = request.form['url']
     try:
-        yt = YouTube(url, on_progress_callback=on_progress)
+        yt = YouTube(url, use_oauth=False, allow_oauth_cache=False)
         
         # 비디오 스트림 (음성 포함, mp4)
         video_streams = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc()
@@ -24,10 +23,10 @@ def get_streams():
         audio_streams = yt.streams.filter(only_audio=True).order_by('abr').desc()
         
         return render_template('result.html', 
-                               video=yt, 
-                               video_streams=video_streams, 
-                               audio_streams=audio_streams,
-                               original_url=urllib.parse.quote(url)) # URL을 안전하게 인코딩
+                            video=yt, 
+                            video_streams=video_streams, 
+                            audio_streams=audio_streams,
+                            original_url=urllib.parse.quote(url)) # URL을 안전하게 인코딩
     except Exception as e:
         return f"""
             <h1>오류가 발생했습니다: {e}</h1>
@@ -42,7 +41,7 @@ def download():
     itag = request.args.get('itag')
     
     try:
-        yt = YouTube(url)
+        yt = YouTube(url, use_oauth=False, allow_oauth_cache=False)
         stream = yt.streams.get_by_itag(itag)
         
         # 실제 다운로드 URL로 사용자를 리디렉션
