@@ -45,12 +45,12 @@ def encode_filename_for_header(filename):
         return f"attachment; filename*=UTF-8''{encoded_filename}"
 
 
-@app.route('/youtube-downloader/')
+@app.route('/')
 def home():
     return render_template('index.html')
 
 
-@app.route('/youtube-downloader/get_streams', methods=['POST'])
+@app.route('/get_streams', methods=['POST'])
 def get_streams():
     url = request.form['url']
     try:
@@ -118,7 +118,7 @@ def get_streams():
         """
 
            
-@app.route('/youtube-downloader/download')
+@app.route('/download')
 def download():
     url = request.args.get('url')
     itag = request.args.get('itag')
