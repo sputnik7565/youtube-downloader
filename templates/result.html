@@ -256,11 +256,11 @@
             </td>
             <td>
                 {% if item.has_audio %}
-                <a href="/youtube-downloader/download?url={{ original_url }}&itag={{ stream.itag }}&type=progressive" 
+                <a href="/download?url={{ original_url }}&itag={{ stream.itag }}&type=progressive" 
                    class="download-btn" 
                    onclick="showLoading(this)">다운로드</a>
                 {% else %}
-                <a href="/youtube-downloader/download?url={{ original_url }}&itag={{ stream.itag }}&type=adaptive&audio_itag={{ item.audio_stream.itag }}" 
+                <a href="/download?url={{ original_url }}&itag={{ stream.itag }}&type=adaptive&audio_itag={{ item.audio_stream.itag }}" 
                    class="download-btn" 
                    onclick="showLoading(this)">다운로드 (합성)</a>
                 {% endif %}
