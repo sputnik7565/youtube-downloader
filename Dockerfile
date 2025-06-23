@@ -34,4 +34,5 @@ EXPOSE 8000
 # Render는 PORT 환경 변수에 서비스할 포트 번호를 동적으로 할당해줍니다.
 # 0.0.0.0은 모든 네트워크 인터페이스에서 요청을 받도록 설정하는 것입니다.
 # api.index:app 은 api/index.py 파일 안에 있는 app 객체를 의미합니다.
-CMD ["gunicorn", "--workers", "1", "eventlet", "--bind", "0.0.0.0:8000", "--timeout", "300", "api.index:app"]
+# CMD ["gunicorn", "--workers", "1", "--bind", "0.0.0.0:8000", "--timeout", "300", "api.index:app"]
+CMD ["gunicorn", "-k", "eventlet", "--bind", "0.0.0.0:8000", "index:app"]
