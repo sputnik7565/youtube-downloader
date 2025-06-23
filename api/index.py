@@ -121,70 +121,60 @@ def get_streams():
 @app.route('/download')
 def download():
     url = request.args.get('url')
+    if not url: # URL 인코딩 문제 방지를 위해 unquote는 나중에 합니다.
+        return "Missing URL", 400
+        
     itag = request.args.get('itag')
     stream_type = request.args.get('type')  # 'progressive' 또는 'adaptive'
     audio_itag = request.args.get('audio_itag')
 
-    if not url or not itag:
-        return "Missing URL or itag", 400
+    if not itag:
+        return "Missing itag", 400
 
     try:
-        yt = YouTube(url)
+        # URL은 yt-dlp에 전달하기 직전에 디코딩합니다.
+        decoded_url = urllib.parse.unquote(url)
+        
+        yt = YouTube(decoded_url)
+        # safe_filename 함수가 없으므로 간단한 버전으로 대체하거나, 이전 코드에서 가져옵니다.
         safe_title = "".join([c for c in yt.title if c.isalnum() or c in (' ', '-')]).rstrip()
         filename = f"{safe_title}_{itag}.mp4"
 
-        # --- yt-dlp 명령어 구성 ---
-        command = [
-            'yt-dlp',
-            '--no-warnings',
-        ]
-
+        command = ['yt-dlp', '--no-warnings']
         if stream_type == 'adaptive' and audio_itag:
             command.extend(['-f', f'{itag}+{audio_itag}', '--merge-output-format', 'mp4'])
         else:
             command.extend(['-f', itag])
         
-        # '-o -' 옵션은 출력을 파일이 아닌 표준 출력(stdout)으로 하라는 의미
-        command.extend(['-o', '-', url])
+        command.extend(['-o', '-', decoded_url])
 
         print(f"Executing streaming command: {' '.join(command)}")
 
-        # 실시간으로 데이터 흐름을 처리하기 위한 제너레이터 함수
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # 실시간 스트리밍 제너레이터
         def generate():
-            # subprocess.run 대신 Popen을 사용하여 프로세스를 시작하고 파이프를 연결
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # stdout에서 데이터를 조각(chunk) 단위로 계속 읽어서 전달
+            while True:
+                chunk = process.stdout.read(8192)
+                if not chunk:
+                    break
+                yield chunk
             
-            try:
-                # stdout에서 데이터를 조각(chunk) 단위로 계속 읽어서 전달(yield)
-                while True:
-                    chunk = process.stdout.read(8192) # 8KB씩 읽기
-                    if not chunk:
-                        break
-                    yield chunk
-            finally:
-                # 사용자가 다운로드를 중단해도 프로세스가 남지 않도록 정리
-                process.terminate()
-                process.wait()
+            # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 오류 확인 로직 추가 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+            # 스트림이 끝나면 프로세스가 종료될 때까지 기다림
+            retcode = process.wait()
+            if retcode != 0:
+                # 오류가 발생했다면, stderr에서 오류 메시지를 읽어서 로그에 출력
+                error_output = process.stderr.read().decode('utf-8', errors='ignore')
+                error_message = f"yt-dlp failed with return code {retcode}. Error: {error_output}"
+                print(error_message) # 터미널(서버 로그)에 에러 출력
+                # (선택사항) 사용자에게도 오류를 알리고 싶다면 아래 주석 해제
+                # yield error_message.encode('utf-8')
+            # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
-        # 인코딩된 헤더 생성 (기존 함수 재활용)
-        # 이 함수가 코드에 없는 경우, 이전 버전의 코드에서 가져와야 합니다.
-        def encode_filename_for_header(filename):
-            try:
-                filename.encode('ascii')
-                return f'attachment; filename="{filename}"'
-            except UnicodeEncodeError:
-                import urllib.parse
-                encoded_filename = urllib.parse.quote(filename.encode('utf-8'))
-                return f"attachment; filename*=UTF-8''{encoded_filename}"
-        
         content_disposition = encode_filename_for_header(filename)
-        
-        # 스트리밍 응답 객체를 생성하여 반환
-        return Response(
-            stream_with_context(generate()),
-            mimetype='video/mp4',
-            headers={'Content-Disposition': content_disposition}
-        )
+        return Response(stream_with_context(generate()), mimetype='video/mp4', headers={'Content-Disposition': content_disposition})
 
     except Exception as e:
         app.logger.error(f"An unexpected error occurred in /download: {e}")
