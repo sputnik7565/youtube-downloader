@@ -118,7 +118,7 @@ def get_streams():
         """
 
            
-@app.route('/youtube-downloader/download')
+@app.route('/download')
 def download():
     url = request.args.get('url')
     itag = request.args.get('itag')
