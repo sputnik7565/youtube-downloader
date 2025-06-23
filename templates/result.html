@@ -269,6 +269,24 @@
         {% endfor %}
     </table>
 
+    <!-- <h2>🎵 오디오만 다운로드</h2>
+    <p style="color: #b0b0b0;">주의: MP3가 아닌 원본 오디오(m4a/webm) 파일입니다.</p>
+    <table>
+        <tr><th>음질</th><th>파일 형식</th><th>다운로드</th></tr>
+        {% for stream in audio_streams %}
+        <tr>
+            <td>{{ stream.abr }}</td>
+            <td>{{ stream.mime_type.split('/')[1] }}</td>
+            <td>
+                <a href="/youtube-downloader/download?url={{ original_url }}&itag={{ stream.itag }}&type=audio" 
+                   class="download-btn"
+                   onclick="showLoading(this)"
+                   target="_blank" 
+                   download="{{ video.title }}.{{ stream.mime_type.split('/')[1] }}">다운로드</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table> -->
 
     <a href="/youtube-downloader/" class="back-link">← 처음으로 돌아가기</a>
 

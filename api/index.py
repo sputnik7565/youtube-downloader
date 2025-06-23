@@ -1,5 +1,5 @@
 # api/index.py
-from flask import Flask, render_template, request, redirect, Response, stream_with_context, send_from_directory
+from flask import Flask, render_template, request, redirect, Response, stream_with_context
 from pytubefix import YouTube
 import urllib.parse
 import subprocess
@@ -12,13 +12,6 @@ import re
 
 # Flask 앱 생성. 템플릿 폴더 경로를 상대 경로로 정확히 지정합니다.
 app = Flask(__name__, template_folder='../templates')
-
-# ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-# 이 부분이 중요합니다! DOWNLOAD_FOLDER 변수가 여기에 정의되어야 합니다.
-DOWNLOAD_FOLDER = os.path.abspath('downloads')
-if not os.path.exists(DOWNLOAD_FOLDER):
-    os.makedirs(DOWNLOAD_FOLDER)
-# ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 
 def safe_filename(filename):
@@ -117,69 +110,176 @@ def get_streams():
             <a href="/youtube-downloader/">돌아가기</a>
         """
 
-           
+
 @app.route('/download')
 def download():
-    url = request.args.get('url')
-    if not url: # URL 인코딩 문제 방지를 위해 unquote는 나중에 합니다.
-        return "Missing URL", 400
-        
+    url = urllib.parse.unquote(request.args.get('url'))
     itag = request.args.get('itag')
-    stream_type = request.args.get('type')  # 'progressive' 또는 'adaptive'
+    download_type = request.args.get('type', 'progressive')
     audio_itag = request.args.get('audio_itag')
-
-    if not itag:
-        return "Missing itag", 400
-
+    
     try:
-        # URL은 yt-dlp에 전달하기 직전에 디코딩합니다.
-        decoded_url = urllib.parse.unquote(url)
+        yt = YouTube(url, client='WEB')
         
-        yt = YouTube(decoded_url)
-        # safe_filename 함수가 없으므로 간단한 버전으로 대체하거나, 이전 코드에서 가져옵니다.
-        safe_title = "".join([c for c in yt.title if c.isalnum() or c in (' ', '-')]).rstrip()
-        filename = f"{safe_title}_{itag}.mp4"
-
-        command = ['yt-dlp', '--no-warnings']
-        if stream_type == 'adaptive' and audio_itag:
-            command.extend(['-f', f'{itag}+{audio_itag}', '--merge-output-format', 'mp4'])
-        else:
-            command.extend(['-f', itag])
+        if download_type == 'progressive':
+            # Progressive 스트림 (영상+음성 함께)
+            stream = yt.streams.get_by_itag(itag)
+            return redirect(stream.url)
         
-        command.extend(['-o', '-', decoded_url])
-
-        print(f"Executing streaming command: {' '.join(command)}")
-
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
-        # 실시간 스트리밍 제너레이터
-        def generate():
-            # stdout에서 데이터를 조각(chunk) 단위로 계속 읽어서 전달
-            while True:
-                chunk = process.stdout.read(8192)
-                if not chunk:
-                    break
-                yield chunk
+        elif download_type == 'adaptive':
+            # Adaptive 스트림 (영상+음성 분리, FFmpeg로 합치기)
+            video_stream = yt.streams.get_by_itag(itag)
+            audio_stream = yt.streams.get_by_itag(audio_itag)
             
-            # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 오류 확인 로직 추가 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-            # 스트림이 끝나면 프로세스가 종료될 때까지 기다림
-            retcode = process.wait()
-            if retcode != 0:
-                # 오류가 발생했다면, stderr에서 오류 메시지를 읽어서 로그에 출력
-                error_output = process.stderr.read().decode('utf-8', errors='ignore')
-                error_message = f"yt-dlp failed with return code {retcode}. Error: {error_output}"
-                print(error_message) # 터미널(서버 로그)에 에러 출력
-                # (선택사항) 사용자에게도 오류를 알리고 싶다면 아래 주석 해제
-                # yield error_message.encode('utf-8')
-            # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-
-        content_disposition = encode_filename_for_header(filename)
-        return Response(stream_with_context(generate()), mimetype='video/mp4', headers={'Content-Disposition': content_disposition})
-
+            if not video_stream or not audio_stream:
+                return "비디오 또는 오디오 스트림을 찾을 수 없습니다."
+            
+            # 안전한 파일명 생성
+            safe_title = safe_filename(yt.title)
+            filename = f"{safe_title}_{video_stream.resolution}.mp4"
+            
+            # 디버깅 정보 출력
+            print(f"=== 스트림 정보 ===")
+            print(f"Video URL: {video_stream.url}")
+            print(f"Audio URL: {audio_stream.url}")
+            print(f"Video itag: {video_stream.itag}")
+            print(f"Audio itag: {audio_stream.itag}")
+            print(f"Video resolution: {video_stream.resolution}")
+            print(f"Audio bitrate: {audio_stream.abr}")
+            
+            def generate():
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    temp_video = os.path.join(temp_dir, "video.mp4")
+                    temp_audio = os.path.join(temp_dir, "audio.mp4")
+                    temp_output = os.path.join(temp_dir, "output.mp4")
+                    
+                    try:
+                        print("=== 비디오 다운로드 시작 ===")
+                        # 1단계: 비디오 파일 다운로드
+                        video_stream.download(output_path=temp_dir, filename="video.mp4")
+                        
+                        print("=== 오디오 다운로드 시작 ===")
+                        # 2단계: 오디오 파일 다운로드
+                        audio_stream.download(output_path=temp_dir, filename="audio.mp4")
+                        
+                        # 파일 존재 및 크기 확인
+                        if not os.path.exists(temp_video):
+                            yield "비디오 파일 다운로드 실패".encode('utf-8')
+                            return
+                        if not os.path.exists(temp_audio):
+                            yield "오디오 파일 다운로드 실패".encode('utf-8')
+                            return
+                            
+                        video_size = os.path.getsize(temp_video)
+                        audio_size = os.path.getsize(temp_audio)
+                        print(f"Video size: {video_size} bytes")
+                        print(f"Audio size: {audio_size} bytes")
+                        
+                        if video_size == 0 or audio_size == 0:
+                            yield "다운로드된 파일이 비어있습니다.".encode('utf-8')
+                            return
+                        
+                        print("=== FFmpeg 합성 시작 ===")
+                        # 3단계: FFmpeg로 합성
+                        cmd = [
+                            'ffmpeg',
+                            '-i', temp_video,
+                            '-i', temp_audio,
+                            '-c:v', 'copy',
+                            '-c:a', 'copy',
+                            '-f', 'mp4',
+                            '-movflags', 'faststart',
+                            '-y',
+                            temp_output
+                        ]
+                        
+                        print(f"FFmpeg 명령어: {' '.join(cmd)}")
+                        
+                        # FFmpeg 실행
+                        process = subprocess.run(
+                            cmd,
+                            capture_output=True,
+                            timeout=300,
+                            text=True
+                        )
+                        
+                        print(f"FFmpeg return code: {process.returncode}")
+                        if process.stderr:
+                            print(f"FFmpeg stderr: {process.stderr}")
+                        if process.stdout:
+                            print(f"FFmpeg stdout: {process.stdout}")
+                        
+                        if process.returncode != 0:
+                            error_msg = f"FFmpeg 오류 (코드: {process.returncode}): {process.stderr}"
+                            yield error_msg.encode('utf-8')
+                            return
+                        
+                        # 생성된 파일 확인
+                        if not os.path.exists(temp_output):
+                            yield "출력 파일이 생성되지 않았습니다.".encode('utf-8')
+                            return
+                            
+                        output_size = os.path.getsize(temp_output)
+                        print(f"Output size: {output_size} bytes")
+                        
+                        if output_size == 0:
+                            yield "출력 파일이 비어있습니다.".encode('utf-8')
+                            return
+                        
+                        print("=== 파일 전송 시작 ===")
+                        # 4단계: 파일 전송
+                        try:
+                            with open(temp_output, 'rb') as f:
+                                sent_bytes = 0
+                                while True:
+                                    chunk = f.read(8192)
+                                    if not chunk:
+                                        break
+                                    sent_bytes += len(chunk)
+                                    yield chunk
+                                print(f"전송 완료: {sent_bytes} bytes")
+                        except Exception as e:
+                            print(f"파일 전송 오류: {str(e)}")
+                            yield f"파일 전송 오류: {str(e)}".encode('utf-8')
+                        
+                    except subprocess.TimeoutExpired:
+                        error_msg = "처리 시간이 초과되었습니다."
+                        print(error_msg)
+                        yield error_msg.encode('utf-8')
+                    except Exception as e:
+                        error_msg = f"처리 중 오류 발생: {str(e)}"
+                        print(error_msg)
+                        yield error_msg.encode('utf-8')
+            
+            # 인코딩된 헤더 생성
+            content_disposition = encode_filename_for_header(filename)
+            
+            return Response(
+                stream_with_context(generate()),
+                mimetype='video/mp4',
+                headers={
+                    'Content-Disposition': content_disposition,
+                    'Content-Type': 'video/mp4',
+                    'Cache-Control': 'no-cache'
+                }
+            )
+        
+        elif download_type == 'audio':
+            # 오디오만 다운로드
+            stream = yt.streams.get_by_itag(itag)
+            return redirect(stream.url)
+            
     except Exception as e:
-        app.logger.error(f"An unexpected error occurred in /download: {e}")
-        return f"예상치 못한 오류가 발생했습니다: {str(e)}", 500
-
+        return f"""
+            <h1>다운로드 중 오류가 발생했습니다: {e}</h1>
+            <p>다음 사항을 확인해주세요:</p>
+            <ul>
+                <li>FFmpeg가 시스템에 설치되어 있는지 확인</li>
+                <li>인터넷 연결이 안정적인지 확인</li>
+                <li>유튜브 영상이 여전히 공개 상태인지 확인</li>
+            </ul>
+            <a href="/youtube-downloader/">돌아가기</a>
+        """
 
 
 # 로컬 테스트용 코드
