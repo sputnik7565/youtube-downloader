@@ -45,12 +45,12 @@ def encode_filename_for_header(filename):
         return f"attachment; filename*=UTF-8''{encoded_filename}"
 
 
-@app.route('/youtube-downloader/')
+@app.route('/')
 def home():
     return render_template('index.html')
 
 
-@app.route('/youtube-downloader/get_streams', methods=['POST'])
+@app.route('/get_streams', methods=['POST'])
 def get_streams():
     url = request.form['url']
     try:
@@ -189,6 +189,7 @@ def download():
     except Exception as e:
         app.logger.error(f"An unexpected error occurred in /download: {e}")
         return f"예상치 못한 오류가 발생했습니다: {str(e)}", 500
+
 
 
 # 로컬 테스트용 코드
