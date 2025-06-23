@@ -18,7 +18,7 @@
 ## 🚀 주요 기능 (Features)
 
 -   **URL 기반 다운로드**: 유튜브 영상 URL만으로 간편하게 다운로드할 수 있습니다.
--   **고화질 영상 지원**: `pytube`를 사용하여 가능한 최고 화질의 영상과 음원을 각각 다운로드합니다.
+-   **고화질 영상 지원**: `pytubefix`를 사용하여 가능한 최고 화질의 영상과 음원을 각각 다운로드합니다.
 -   **자동 병합**: `FFmpeg`을 사용하여 다운로드된 영상과 음원을 자동으로 하나의 파일로 병합합니다.
 -   **간편한 배포**: Docker와 Docker Compose를 통해 단 한 줄의 명령어로 서비스를 시작할 수 있습니다.
 -   **파일 영속성**: 다운로드된 파일은 호스트 머신의 `downloads` 폴더에 저장되어 컨테이너가 종료되어도 유지됩니다.
@@ -27,7 +27,7 @@
 
 ## 🛠️ 기술 스택 (Tech Stack)
 
--   **Backend**: Python, Flask, Pytube
+-   **Backend**: Python, Flask, Pytubefix
 -   **WSGI Server**: Gunicorn
 -   **Containerization**: Docker, Docker Compose
 -   **Core Dependency**: FFmpeg (비디오/오디오 병합)
