@@ -107,7 +107,7 @@ def get_streams():
         return f"""
             <h1>오류가 발생했습니다: {e}</h1>
             <p>유효한 유튜브 URL인지, 또는 비공개 영상이 아닌지 확인해주세요.</p>
-            <a href="/">돌아가기</a>
+            <a href="/youtube-downloader/">돌아가기</a>
         """
 
 
@@ -278,7 +278,7 @@ def download():
                 <li>인터넷 연결이 안정적인지 확인</li>
                 <li>유튜브 영상이 여전히 공개 상태인지 확인</li>
             </ul>
-            <a href="/">돌아가기</a>
+            <a href="/youtube-downloader/">돌아가기</a>
         """
 
 

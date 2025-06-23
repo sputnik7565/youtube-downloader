@@ -256,11 +256,11 @@
             </td>
             <td>
                 {% if item.has_audio %}
-                <a href="/download?url={{ original_url }}&itag={{ stream.itag }}&type=progressive" 
+                <a href="/youtube-downloader/download?url={{ original_url }}&itag={{ stream.itag }}&type=progressive" 
                    class="download-btn" 
                    onclick="showLoading(this)">다운로드</a>
                 {% else %}
-                <a href="/download?url={{ original_url }}&itag={{ stream.itag }}&type=adaptive&audio_itag={{ item.audio_stream.itag }}" 
+                <a href="/youtube-downloader/download?url={{ original_url }}&itag={{ stream.itag }}&type=adaptive&audio_itag={{ item.audio_stream.itag }}" 
                    class="download-btn" 
                    onclick="showLoading(this)">다운로드 (합성)</a>
                 {% endif %}
@@ -278,7 +278,7 @@
             <td>{{ stream.abr }}</td>
             <td>{{ stream.mime_type.split('/')[1] }}</td>
             <td>
-                <a href="/download?url={{ original_url }}&itag={{ stream.itag }}&type=audio" 
+                <a href="/youtube-downloader/download?url={{ original_url }}&itag={{ stream.itag }}&type=audio" 
                    class="download-btn"
                    onclick="showLoading(this)"
                    target="_blank" 
@@ -288,7 +288,7 @@
         {% endfor %}
     </table> -->
 
-    <a href="/" class="back-link">← 처음으로 돌아가기</a>
+    <a href="/youtube-downloader/" class="back-link">← 처음으로 돌아가기</a>
 
     <!-- 로딩 오버레이 -->
     <div class="loading-overlay" id="loadingOverlay">
